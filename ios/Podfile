@@ -8,6 +8,10 @@ target 'facerecognition' do
 
   use_react_native!(:path => config["reactNativePath"])
 
+  pod 'RNOpencv3', :path => '../node_modules/react-native-opencv3'
+
+  pod 'RNFS', :path => '../node_modules/react-native-fs'
+
   target 'facerecognitionTests' do
     inherit! :complete
     # Pods for testing
