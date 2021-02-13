@@ -5,8 +5,10 @@ platform :ios, '10.0'
 
 target 'facerecognition' do
   config = use_native_modules!
-
+  pod 'Firebase/Core'
   use_react_native!(:path => config["reactNativePath"])
+
+  pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
 
   target 'facerecognitionTests' do
     inherit! :complete
