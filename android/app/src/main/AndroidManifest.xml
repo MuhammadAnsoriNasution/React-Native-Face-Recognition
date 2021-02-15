@@ -2,7 +2,11 @@
   package="com.facerecognition">
 
     <uses-permission android:name="android.permission.INTERNET" />
-
+‍<uses-permission android:name="android.permission.CAMERA"></uses-permission>
+‍
+‍<uses-permission android:name="android.permission.RECORD_AUDIO"></uses-permission>
+‍<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"></uses-permission>
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -22,6 +26,9 @@
         </intent-filter>
       </activity>
       <activity android:name="com.facebook.react.devsupport.DevSettingsActivity" />
+        <meta-data
+      android:name="com.google.firebase.ml.vision.DEPENDENCIES"
+      android:value="ocr, face" /> <!-- choose models that you will use -->
     </application>
 
 </manifest>

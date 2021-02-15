@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "227248611422",
+    "project_id": "deteksi-wajah-de736",
+    "storage_bucket": "deteksi-wajah-de736.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227248611422:android:a87b16db09914edfff94cf",
+        "android_client_info": {
+          "package_name": "com.facerecognition"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "227248611422-e87vvod3ba627ivfo78270aa73r5fnsl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArlmQMpNy2zGMFT0ZGZUYnqcCmiFf9kYQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "227248611422-e87vvod3ba627ivfo78270aa73r5fnsl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "227248611422-jns9031g3gvor6gl0it7cc5qvpgrq44k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.facerecognition"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

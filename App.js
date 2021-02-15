@@ -1,114 +1,240 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
 
 import React from 'react';
-import {
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  StatusBar,
-} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { RNCamera } from 'react-native-camera';
+import SoundPlayer from 'react-native-sound-player'
+import CountDown from 'react-native-countdown-component';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
 
-const App: () => React$Node = () => {
-  return (
-    <>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
-  );
+
+const wbOrder = {
+  auto: 'sunny',
+  sunny: 'cloudy',
+  cloudy: 'shadow',
+  shadow: 'fluorescent',
+  fluorescent: 'incandescent',
+  incandescent: 'auto',
 };
 
+const landmarkSize = 2;
+
+class CameraScreen extends React.Component {
+  state = {
+    flash: 'off',
+    zoom: 0,
+    autoFocus: 'on',
+    depth: 0,
+    type: 'front',
+    whiteBalance: 'auto',
+    ratio: '16:9',
+    recordOptions: {
+      mute: false,
+      maxDuration: 5,
+      quality: RNCamera.Constants.VideoQuality['288p'],
+    },
+    isRecording: false,
+    canDetectFaces: true,
+    canDetectText: false,
+    canDetectBarcode: false,
+    faces: [],
+    textBlocks: [],
+    barcodes: [],
+    checkKedipatMata:false,
+    bukaMata: 'tidak',
+    tutupMata: 'tidak',
+    time:0
+  };
+
+  async kedipkanMata(){
+    try {
+      await SoundPlayer.playSoundFile('kedipkan_mata', 'mp3')
+      await SoundPlayer.addEventListener('FinishedPlaying', ({ success }) => {
+       this.setState({time: 5})
+      })
+    } catch (e) {
+        console.log(`cannot play the sound file`, e)
+    }
+  }
+
+  mulai(){
+    this.setState({bukaMata: 'tidak', tutupMata: 'tidak', checkKedipatMata: false})
+    this.kedipkanMata()
+  }
+
+  takePicture = async function() {
+    if (this.camera) {
+      const options = {base64: true };
+      const data = await this.camera.takePictureAsync(options);
+      console.warn('takePicture ', data);
+    }
+  };
+  facesDetected = ({ faces }) => {
+    if (this.state.checkKedipatMata){
+      if (faces[0]){
+        if (this.state.tutupMata === 'tidak' && faces[0].rightEyeOpenProbability.toFixed(0) == 0){
+          this.setState({tutupMata: 'Ya'})
+        }
+        if (this.state.tutupMata === 'Ya' && faces[0].rightEyeOpenProbability.toFixed(0) == 1){
+          this.setState({checkKedipatMata: false, bukaMata: 'Ya'})
+        }
+      }
+    }
+  };
+
+  renderCamera() {
+    const { canDetectFaces, canDetectText, canDetectBarcode, time } = this.state;
+
+    return (
+      <RNCamera
+        ref={ref => {
+          this.camera = ref;
+        }}
+        style={{
+          flex: 1,
+        }}
+        type={this.state.type}
+        flashMode={this.state.flash}
+        autoFocus={this.state.autoFocus}
+        zoom={this.state.zoom}
+        whiteBalance={this.state.whiteBalance}
+        ratio={this.state.ratio}
+        focusDepth={this.state.depth}
+        trackingEnabled
+        androidCameraPermissionOptions={{
+          title: 'Permission to use camera',
+          message: 'We need your permission to use your camera',
+          buttonPositive: 'Ok',
+          buttonNegative: 'Cancel',
+        }}
+        faceDetectionLandmarks={RNCamera.Constants.FaceDetection.Landmarks.all}
+        faceDetectionClassifications={RNCamera.Constants.FaceDetection.Classifications.all}
+        onFacesDetected={canDetectFaces ? this.facesDetected : null}
+        onTextRecognized={canDetectText ? this.textRecognized : null}
+        onGoogleVisionBarcodesDetected={canDetectBarcode ? this.barcodeRecognized : null}
+      >
+        <View
+          style={{
+            flex: 0.5,
+          }}
+        >
+           {
+             time ? <CountDown
+             until={this.state.time}
+             size={30}
+             onFinish={() => {
+               this.setState({time: 0, checkKedipatMata: true})
+             }}
+             digitStyle={{backgroundColor: '#FFF'}}
+             digitTxtStyle={{color: '#1CC625'}}
+             timeToShow={['S']}
+             timeLabels={{s: ''}}
+         /> : null
+           }
+         
+        </View>
+        <View
+          style={{
+            flex: 0.1,
+            backgroundColor: 'transparent',
+            flexDirection: 'row',
+            position: 'absolute',
+            bottom: 10,
+            paddingHorizontal: 10
+          }}
+        >
+          
+          <TouchableOpacity
+            style={[styles.flipButton, styles.picButton, {}]}
+            onPress={this.mulai.bind(this)}
+          >
+            <Text style={styles.flipText}> Mulai </Text>
+          </TouchableOpacity>
+        </View>
+      </RNCamera>
+    );
+  }
+  render() {
+    if (this.state.tutupMata === 'Ya'  && this.state.bukaMata === 'Ya'){
+      alert('Mata Sudah Berkedip')
+      this.takePicture()
+    }
+    return <View style={styles.container}>{this.renderCamera()}</View>;
+  }
+}
+export default CameraScreen
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
+  container: {
+    flex: 1,
+    paddingTop: 10,
+    backgroundColor: '#000',
   },
-  engine: {
+  flipButton: {
+    flex: 1,
+    height: 40,
+    marginHorizontal: 2,
+    marginBottom: 10,
+    marginTop: 10,
+    borderRadius: 8,
+    borderColor: 'white',
+    borderWidth: 1,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flipText: {
+    color: 'white',
+    fontSize: 15,
+  },
+  zoomText: {
     position: 'absolute',
+    bottom: 70,
+    zIndex: 2,
+    left: 2,
+  },
+  picButton: {
+    backgroundColor: 'darkseagreen',
+  },
+  facesContainer: {
+    position: 'absolute',
+    bottom: 0,
     right: 0,
+    left: 0,
+    top: 0,
   },
-  body: {
-    backgroundColor: Colors.white,
+  face: {
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 2,
+    position: 'absolute',
+    borderColor: '#FFD700',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  landmark: {
+    width: landmarkSize,
+    height: landmarkSize,
+    position: 'absolute',
+    backgroundColor: 'red',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
+  faceText: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    margin: 10,
+    backgroundColor: 'transparent',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
+  text: {
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 2,
+    position: 'absolute',
+    borderColor: '#F00',
+    justifyContent: 'center',
   },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
+  textBlock: {
+    color: '#F00',
+    position: 'absolute',
+    textAlign: 'center',
+    backgroundColor: 'transparent',
   },
 });
-
-export default App;
