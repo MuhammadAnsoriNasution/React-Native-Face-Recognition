@@ -45,6 +45,14 @@ class CameraScreen extends React.Component {
     time:0
   };
 
+  componentDidUpdate(){
+    if (this.state.checkKedipatMata){
+      const waktu = setInterval(() => {
+        this.setState({checkKedipatMata: false})
+        clearInterval(waktu)
+      }, 3000);
+    }
+  }
   async kedipkanMata(){
     try {
       await SoundPlayer.playSoundFile('kedipkan_mata', 'mp3')
@@ -71,8 +79,13 @@ class CameraScreen extends React.Component {
   facesDetected = ({ faces }) => {
     if (this.state.checkKedipatMata){
       if (faces[0]){
-        if (this.state.tutupMata === 'tidak' && faces[0].rightEyeOpenProbability.toFixed(0) == 0){
-          this.setState({tutupMata: 'Ya'})
+        if (this.state.bukaMata === 'tidak' && this.state.tutupMata === 'tidak'){
+          this.setState({bukaMata: 'Ya'})
+          return
+        }
+        if (this.state.bukaMata === 'Ya' && faces[0].rightEyeOpenProbability.toFixed(0) == 0){
+          this.setState({tutupMata: 'Ya', bukaMata: 'tidak'})
+          return
         }
         if (this.state.tutupMata === 'Ya' && faces[0].rightEyeOpenProbability.toFixed(0) == 1){
           this.setState({checkKedipatMata: false, bukaMata: 'Ya'})
@@ -99,6 +112,7 @@ class CameraScreen extends React.Component {
         whiteBalance={this.state.whiteBalance}
         ratio={this.state.ratio}
         focusDepth={this.state.depth}
+        faceDetectionMode={RNCamera.Constants.FaceDetection.Mode.accurate}
         trackingEnabled
         androidCameraPermissionOptions={{
           title: 'Permission to use camera',
@@ -142,18 +156,20 @@ class CameraScreen extends React.Component {
             paddingHorizontal: 10
           }}
         >
-          
-          <TouchableOpacity
+          {
+            !this.state.checkKedipatMata ? <TouchableOpacity
             style={[styles.flipButton, styles.picButton, {}]}
             onPress={this.mulai.bind(this)}
           >
             <Text style={styles.flipText}> Mulai </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> : null
+          }
         </View>
       </RNCamera>
     );
   }
   render() {
+    console.log(this.state.checkKedipatMata, 'ini kedip mata')
     if (this.state.tutupMata === 'Ya'  && this.state.bukaMata === 'Ya'){
       alert('Mata Sudah Berkedip')
       this.takePicture()
