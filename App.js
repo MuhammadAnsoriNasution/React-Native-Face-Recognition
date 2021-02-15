@@ -1,257 +1,240 @@
-// 'use strict';
-// import React, { PureComponent } from 'react';
-// import { AppRegistry, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// import { RNCamera } from 'react-native-camera';
 
-// const PendingView = () => (
-//   <View
-//     style={{
-//       flex: 1,
-//       backgroundColor: 'lightgreen',
-//       justifyContent: 'center',
-//       alignItems: 'center',
-//     }}
-//   >
-//     <Text>Waiting</Text>
-//   </View>
-// );
-
-// class ExampleApp extends PureComponent {
-//   constructor(props) {
-//     super(props);
-//     this.state = {
-//       type: RNCamera.Constants.Type.back,
-//       flashMode: RNCamera.Constants.FlashMode.on
-//     };
-//   }
-
-
-//   render() {
-//     return (
-//       <View style={styles.container}>
-//         <RNCamera
-//           style={styles.preview}
-//           type={this.state.type}
-//           flashMode={this.state.flashMode}
-//           androidCameraPermissionOptions={{
-//             title: 'Permission to use camera',
-//             message: 'We need your permission to use your camera',
-//             buttonPositive: 'Ok',
-//             buttonNegative: 'Cancel',
-//           }}
-//           androidRecordAudioPermissionOptions={{
-//             title: 'Permission to use audio recording',
-//             message: 'We need your permission to use your audio',
-//             buttonPositive: 'Ok',
-//             buttonNegative: 'Cancel',
-//           }}
-//           faceDetectionMode={RNCamera.Constants.FaceDetection.Mode.fast}
-//           faceDetectionClassifications={RNCamera.Constants.FaceDetection.Classifications.all}
-//           onFacesDetected={() => {
-//             console.log('halo')
-//           }}
-//         >
-//           {({ camera, status, recordAudioPermissionStatus }) => {
-//             if (status !== 'READY') return <PendingView />;
-//             return (
-//               <View style={{ flex: 0, flexDirection: 'row', justifyContent: 'center' }}>
-//                 <TouchableOpacity onPress={() => this.takePicture(camera)} style={styles.capture}>
-//                   <Text style={{ fontSize: 14 }}> SNAP </Text>
-//                 </TouchableOpacity>
-//                 <TouchableOpacity onPress={() => this.switchKamera()} style={styles.capture}>
-//                   <Text style={{ fontSize: 14 }}> Tukar Kamera </Text>
-//                 </TouchableOpacity>
-//               </View>
-//             );
-//           }}
-//         </RNCamera>
-//       </View>
-//     );
-//   }
-
-//   takePicture = async function(camera) {
-//     console.log(this.state.type)
-//     const options = { quality: 0.5, base64: true };
-//     const data = await camera.takePictureAsync(options);
-//     //  eslint-disable-next-line
-//     console.log(data.uri);
-//   };
-//   switchKamera = () => {
-//     this.setState({
-//       type: this.state.type ?  RNCamera.Constants.Type.back :  RNCamera.Constants.Type.front,
-//       flashMode: this.state.type ? RNCamera.Constants.FlashMode.off : RNCamera.Constants.FlashMode.on
-//     })
-//   }
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     flexDirection: 'column',
-//     backgroundColor: 'black',
-//   },
-//   preview: {
-//     flex: 1,
-//     justifyContent: 'flex-end',
-//     alignItems: 'center',
-//   },
-//   capture: {
-//     flex: 0,
-//     backgroundColor: '#fff',
-//     borderRadius: 5,
-//     padding: 15,
-//     paddingHorizontal: 20,
-//     alignSelf: 'center',
-//     margin: 20,
-//   },
-// });
-
-// export default ExampleApp
-
-import React, { PureComponent } from 'react'
+import React from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { RNCamera } from 'react-native-camera';
-import Icon from 'react-native-vector-icons/dist/FontAwesome';
-import { TouchableOpacity, Alert, StyleSheet, Text, View } from 'react-native';
+import SoundPlayer from 'react-native-sound-player'
+import CountDown from 'react-native-countdown-component';
 
 
-const PendingView = () => (
-  <View
-    style={{
-      flex: 1,
-      backgroundColor: 'lightgreen',
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}
-  >
-    <Text>Waiting</Text>
-  </View>
-);
-class Camera extends PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      takingPic: false,
-      box: null,
-      type: RNCamera.Constants.Type.back,
-      flashMode: RNCamera.Constants.FlashMode.on
-    };
+
+const wbOrder = {
+  auto: 'sunny',
+  sunny: 'cloudy',
+  cloudy: 'shadow',
+  shadow: 'fluorescent',
+  fluorescent: 'incandescent',
+  incandescent: 'auto',
+};
+
+const landmarkSize = 2;
+
+class CameraScreen extends React.Component {
+  state = {
+    flash: 'off',
+    zoom: 0,
+    autoFocus: 'on',
+    depth: 0,
+    type: 'front',
+    whiteBalance: 'auto',
+    ratio: '16:9',
+    recordOptions: {
+      mute: false,
+      maxDuration: 5,
+      quality: RNCamera.Constants.VideoQuality['288p'],
+    },
+    isRecording: false,
+    canDetectFaces: true,
+    canDetectText: false,
+    canDetectBarcode: false,
+    faces: [],
+    textBlocks: [],
+    barcodes: [],
+    checkKedipatMata:false,
+    bukaMata: 'tidak',
+    tutupMata: 'tidak',
+    time:0
+  };
+
+  async kedipkanMata(){
+    try {
+      await SoundPlayer.playSoundFile('kedipkan_mata', 'mp3')
+      await SoundPlayer.addEventListener('FinishedPlaying', ({ success }) => {
+       this.setState({time: 5})
+      })
+    } catch (e) {
+        console.log(`cannot play the sound file`, e)
+    }
   }
-  takePicture = async () => {
-    if (this.camera && !this.state.takingPic) {
-      let options = {
-        quality: 0.85,
-        fixOrientation: true,
-        forceUpOrientation: true,
-      };
-      this.setState({ takingPic: true });
 
-      try {
-        const data = await this.camera.takePictureAsync(options);
-        this.setState({ takingPic: false }, () => {
-          this.props.onPicture(data);
-        });
-      } catch (error) {
-        this.setState({ takingPic: false });
-        Alert.alert('Error', 'Failed to take picture: ' + (err.message || err));
+  mulai(){
+    this.setState({bukaMata: 'tidak', tutupMata: 'tidak', checkKedipatMata: false})
+    this.kedipkanMata()
+  }
+
+  takePicture = async function() {
+    if (this.camera) {
+      const options = {base64: true };
+      const data = await this.camera.takePictureAsync(options);
+      console.warn('takePicture ', data);
+    }
+  };
+  facesDetected = ({ faces }) => {
+    if (this.state.checkKedipatMata){
+      if (faces[0]){
+        if (this.state.tutupMata === 'tidak' && faces[0].rightEyeOpenProbability.toFixed(0) == 0){
+          this.setState({tutupMata: 'Ya'})
+        }
+        if (this.state.tutupMata === 'Ya' && faces[0].rightEyeOpenProbability.toFixed(0) == 1){
+          this.setState({checkKedipatMata: false, bukaMata: 'Ya'})
+        }
       }
     }
-  }
-  onFaceDetected = ({ faces }) => {
-    console.log(faces)
-    if (faces[0]) {
-      this.setState({
-        box: {
-          width: faces[0].bounds.size.width,
-          height: faces[0].bounds.size.height,
-          x: faces[0].bounds.origin.x,
-          y: faces[0].bounds.origin.y,
-          yawAngle: faces[0].yawAngle,
-          rollAngle: faces[0].rollAngle,
-        }
-      })
-    }
-  }
+  };
 
-  switchKamera = () => {
-    this.setState({
-      type: this.state.type ?  RNCamera.Constants.Type.back :  RNCamera.Constants.Type.front,
-      flashMode: this.state.type ? RNCamera.Constants.FlashMode.off : RNCamera.Constants.FlashMode.on
-    })
-  }
-  render() {
+  renderCamera() {
+    const { canDetectFaces, canDetectText, canDetectBarcode, time } = this.state;
+
     return (
-      <>
       <RNCamera
         ref={ref => {
           this.camera = ref;
         }}
-        captureAudio={false}
-        style={{ flex: 1 }}
+        style={{
+          flex: 1,
+        }}
         type={this.state.type}
-        onFacesDetected={this.onFaceDetected}
+        flashMode={this.state.flash}
+        autoFocus={this.state.autoFocus}
+        zoom={this.state.zoom}
+        whiteBalance={this.state.whiteBalance}
+        ratio={this.state.ratio}
+        focusDepth={this.state.depth}
+        trackingEnabled
         androidCameraPermissionOptions={{
           title: 'Permission to use camera',
           message: 'We need your permission to use your camera',
           buttonPositive: 'Ok',
           buttonNegative: 'Cancel',
         }}
-        activeOpacity={0.5}
-        style={styles.btnAlignment}
-        onPress={this.takePicture}
-        whiteBalance={RNCamera.Constants.WhiteBalance.shadow}
-        faceDetectionMode={RNCamera.Constants.FaceDetection.Mode.accurate}
         faceDetectionLandmarks={RNCamera.Constants.FaceDetection.Landmarks.all}
         faceDetectionClassifications={RNCamera.Constants.FaceDetection.Classifications.all}
-        >
-
-           {({ camera, status, recordAudioPermissionStatus }) => {
-            if (status !== 'READY') return <PendingView />;
-            return (
-              <View style={{ flex: 0, flexDirection: 'row', justifyContent: 'center' }}>
-                <TouchableOpacity onPress={() => this.takePicture(camera)} style={styles.capture}>
-                  <Text style={{ fontSize: 14 }}> SNAP </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => this.switchKamera()} style={styles.capture}>
-                  <Text style={{ fontSize: 14 }}> Tukar Kamera </Text>
-                </TouchableOpacity>
-              </View>
-            );
+        onFacesDetected={canDetectFaces ? this.facesDetected : null}
+        onTextRecognized={canDetectText ? this.textRecognized : null}
+        onGoogleVisionBarcodesDetected={canDetectBarcode ? this.barcodeRecognized : null}
+      >
+        <View
+          style={{
+            flex: 0.5,
           }}
-        </RNCamera>
-
-        
-      </>
+        >
+           {
+             time ? <CountDown
+             until={this.state.time}
+             size={30}
+             onFinish={() => {
+               this.setState({time: 0, checkKedipatMata: true})
+             }}
+             digitStyle={{backgroundColor: '#FFF'}}
+             digitTxtStyle={{color: '#1CC625'}}
+             timeToShow={['S']}
+             timeLabels={{s: ''}}
+         /> : null
+           }
+         
+        </View>
+        <View
+          style={{
+            flex: 0.1,
+            backgroundColor: 'transparent',
+            flexDirection: 'row',
+            position: 'absolute',
+            bottom: 10,
+            paddingHorizontal: 10
+          }}
+        >
+          
+          <TouchableOpacity
+            style={[styles.flipButton, styles.picButton, {}]}
+            onPress={this.mulai.bind(this)}
+          >
+            <Text style={styles.flipText}> Mulai </Text>
+          </TouchableOpacity>
+        </View>
+      </RNCamera>
     );
   }
-  
+  render() {
+    if (this.state.tutupMata === 'Ya'  && this.state.bukaMata === 'Ya'){
+      alert('Mata Sudah Berkedip')
+      this.takePicture()
+    }
+    return <View style={styles.container}>{this.renderCamera()}</View>;
+  }
 }
+export default CameraScreen
 const styles = StyleSheet.create({
-  btnAlignment: {
+  container: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'flex-end',
+    paddingTop: 10,
+    backgroundColor: '#000',
+  },
+  flipButton: {
+    flex: 1,
+    height: 40,
+    marginHorizontal: 2,
+    marginBottom: 10,
+    marginTop: 10,
+    borderRadius: 8,
+    borderColor: 'white',
+    borderWidth: 1,
+    padding: 5,
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
   },
-    container: {
-    flex: 1,
-    flexDirection: 'column',
-    backgroundColor: 'black',
+  flipText: {
+    color: 'white',
+    fontSize: 15,
   },
-  preview: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+  zoomText: {
+    position: 'absolute',
+    bottom: 70,
+    zIndex: 2,
+    left: 2,
   },
-  capture: {
-    flex: 0,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    padding: 15,
-    paddingHorizontal: 20,
-    alignSelf: 'center',
-    margin: 20,
+  picButton: {
+    backgroundColor: 'darkseagreen',
+  },
+  facesContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    left: 0,
+    top: 0,
+  },
+  face: {
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 2,
+    position: 'absolute',
+    borderColor: '#FFD700',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  landmark: {
+    width: landmarkSize,
+    height: landmarkSize,
+    position: 'absolute',
+    backgroundColor: 'red',
+  },
+  faceText: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    margin: 10,
+    backgroundColor: 'transparent',
+  },
+  text: {
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 2,
+    position: 'absolute',
+    borderColor: '#F00',
+    justifyContent: 'center',
+  },
+  textBlock: {
+    color: '#F00',
+    position: 'absolute',
+    textAlign: 'center',
+    backgroundColor: 'transparent',
   },
 });
-
-export default Camera
