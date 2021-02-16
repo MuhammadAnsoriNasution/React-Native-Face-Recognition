@@ -40,8 +40,8 @@ class CameraScreen extends React.Component {
     textBlocks: [],
     barcodes: [],
     checkKedipatMata:false,
-    bukaMata: 'tidak',
-    tutupMata: 'tidak',
+    bukaMata: [],
+    tutupMata: [],
     time:0
   };
 
@@ -50,14 +50,14 @@ class CameraScreen extends React.Component {
       const waktu = setInterval(() => {
         this.setState({checkKedipatMata: false})
         clearInterval(waktu)
-      }, 3000);
+      }, 5000);
     }
   }
   async kedipkanMata(){
     try {
       await SoundPlayer.playSoundFile('kedipkan_mata', 'mp3')
       await SoundPlayer.addEventListener('FinishedPlaying', ({ success }) => {
-       this.setState({time: 5})
+       this.setState({time: 2})
       })
     } catch (e) {
         console.log(`cannot play the sound file`, e)
@@ -65,7 +65,7 @@ class CameraScreen extends React.Component {
   }
 
   mulai(){
-    this.setState({bukaMata: 'tidak', tutupMata: 'tidak', checkKedipatMata: false})
+    this.setState({bukaMata: [], tutupMata: [], checkKedipatMata: false})
     this.kedipkanMata()
   }
 
@@ -77,20 +77,17 @@ class CameraScreen extends React.Component {
     }
   };
   facesDetected = ({ faces }) => {
+    
     if (this.state.checkKedipatMata){
       if (faces[0]){
-        if (this.state.bukaMata === 'tidak' && this.state.tutupMata === 'tidak'){
-          this.setState({bukaMata: 'Ya'})
-          return
+        if (this.state.tutupMata.length < 3 && faces[0].rightEyeOpenProbability.toFixed(0) == 0){
+          this.setState({tutupMata: [...this.state.tutupMata, faces[0].rightEyeOpenProbability.toFixed(0)]})
         }
-        if (this.state.bukaMata === 'Ya' && faces[0].rightEyeOpenProbability.toFixed(0) == 0){
-          this.setState({tutupMata: 'Ya', bukaMata: 'tidak'})
-          return
-        }
-        if (this.state.tutupMata === 'Ya' && faces[0].rightEyeOpenProbability.toFixed(0) == 1){
-          this.setState({checkKedipatMata: false, bukaMata: 'Ya'})
+        if (!this.state.tutupMata.find(item => item === "1") && this.state.bukaMata.length < 3){
+          this.setState({bukaMata: [...this.state.bukaMata, faces[0].rightEyeOpenProbability.toFixed(0)]})
         }
       }
+      
     }
   };
 
@@ -112,7 +109,7 @@ class CameraScreen extends React.Component {
         whiteBalance={this.state.whiteBalance}
         ratio={this.state.ratio}
         focusDepth={this.state.depth}
-        faceDetectionMode={RNCamera.Constants.FaceDetection.Mode.accurate}
+        // faceDetectionMode={RNCamera.Constants.FaceDetection.Mode.}
         trackingEnabled
         androidCameraPermissionOptions={{
           title: 'Permission to use camera',
@@ -169,8 +166,8 @@ class CameraScreen extends React.Component {
     );
   }
   render() {
-    console.log(this.state.checkKedipatMata, 'ini kedip mata')
-    if (this.state.tutupMata === 'Ya'  && this.state.bukaMata === 'Ya'){
+    const {tutupMata, bukaMata} = this.state
+    if ( tutupMata.length > 2 && bukaMata.length > 2 && !tutupMata.find(item => item === "1")  && !bukaMata.find(item => item === "0")){
       alert('Mata Sudah Berkedip')
       this.takePicture()
     }
